@@ -13,14 +13,22 @@
 namespace ServerHTTP
 {
 
-  using http_req_handler_func_t = std::function<HTTP::HttpResponse(HTTP::HttpRequest)>;
+  using http_req_handler_func_t = std::function<HTTP::HttpResponse(const HTTP::HttpRequest&)>;
+
+  struct http_req_handler_t
+  {
+    std::string http_method{};
+    http_req_handler_func_t func{};
+  };
 
   struct server_http
   {
 
+private:
     int sockfd = -1;
-    std::map<std::string, http_req_handler_func_t> uri_path_to_handler_map{};
+    std::map<std::string, http_req_handler_t> http_req_handler_map{};
 
+public:
     void init(const char *port, int backlog)
     {
       sockfd = Net::socket();
@@ -36,7 +44,11 @@ namespace ServerHTTP
         loop();
       }
     }
+    void register_http_req_handler(const std::string& uri_path, const std::string& http_method, http_req_handler_func_t handler_func){
+      http_req_handler_map[uri_path] = {http_method, handler_func};
+    }
 
+private:
     int send_local_file(int new_socket, HTTP::HttpRequest http_req)
     {
       std::string response_msg_body{};
@@ -72,14 +84,13 @@ namespace ServerHTTP
 
       HTTP::HttpResponse response{200, "OK", mime_type, response_msg_body};
       socket_send_http_response(new_socket, response);
-      
+
       return 0;
     }
 
     int loop()
     {
       int ret = 0;
-
 
       sockaddr their_addr;
       int new_socket = Net::accept(sockfd, &their_addr);
@@ -88,12 +99,16 @@ namespace ServerHTTP
       HTTP::HttpRequest http_req = HTTP::parse_http_req_str(received_msg_str);
       URI::URI http_req_uri = URI::parse_uri_from_string(http_req.uri);
 
-      std::cout << "Recieved Request:\n" << http_req_uri.path << "\n";
-
-      if (uri_path_to_handler_map.contains(http_req_uri.path))
+      if (http_req_handler_map.contains(http_req_uri.path))
       {
-        auto handler = uri_path_to_handler_map[http_req_uri.path];
-        HTTP::HttpResponse response = handler(http_req);
+        auto handler = http_req_handler_map[http_req_uri.path];
+        if (handler.http_method != http_req.method)
+        {
+          HTTP::HttpResponse response{404 , "ERROR", "text/plain", "HTTP Method Doesn't match handler method type error"};
+          socket_send_http_response(new_socket, response);
+          ret = -1;
+        }
+        HTTP::HttpResponse response = handler.func(http_req);
         socket_send_http_response(new_socket, response);
       }
 
@@ -104,6 +119,5 @@ namespace ServerHTTP
       Net::close(new_socket);
       return ret;
     }
-    
   };
 }

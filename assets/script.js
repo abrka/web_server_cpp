@@ -6,3 +6,7 @@ fetch('http://127.0.0.1:3490/api_call', {
     console.log(json);
   });
 
+let file = "fetch_info.txt"
+fetch (file)
+.then(x => x.text())
+.then(y => document.getElementById("demo").innerHTML = y);
