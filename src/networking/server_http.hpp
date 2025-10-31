@@ -3,6 +3,7 @@
 #include <iostream>
 #include <map>
 #include <functional>
+#include <utility>
 
 #include "net.hpp"
 #include "http.hpp"
@@ -13,22 +14,17 @@
 namespace ServerHTTP
 {
 
-  using http_req_handler_func_t = std::function<HTTP::HttpResponse(const HTTP::HttpRequest&)>;
+  using http_req_handler_func_t = std::function<HTTP::HttpResponse(const HTTP::HttpRequest &)>;
 
-  struct http_req_handler_t
+  using http_req_handler_key = std::pair<std::string, std::string>; // first item is the uri path, second item the the http method
+
+  struct Server
   {
-    std::string http_method{};
-    http_req_handler_func_t func{};
-  };
-
-  struct server_http
-  {
-
-private:
+  private:
     int sockfd = -1;
-    std::map<std::string, http_req_handler_t> http_req_handler_map{};
+    std::map<http_req_handler_key, http_req_handler_func_t> http_req_handler_map{};
 
-public:
+  public:
     void init(const char *port, int backlog)
     {
       sockfd = Net::socket();
@@ -41,15 +37,29 @@ public:
     {
       while (true)
       {
-        loop();
+        ServerError ret = loop();
+        if (ret != ServerError::OK)
+        {
+          std::cout << "SERVER ERROR: " << (int)ret << std::endl;
+        }
       }
     }
-    void register_http_req_handler(const std::string& uri_path, const std::string& http_method, http_req_handler_func_t handler_func){
-      http_req_handler_map[uri_path] = {http_method, handler_func};
+    void register_http_req_handler(const std::string &uri_path, const std::string &http_method, http_req_handler_func_t handler_func)
+    {
+      http_req_handler_map[{uri_path, http_method}] = handler_func;
     }
 
-private:
-    int send_local_file(int new_socket, HTTP::HttpRequest http_req)
+    enum class ServerError
+    {
+      CANNOT_OPEN_REQ_FILE = 1,
+      CANNOT_FIND_MIME_TYPE = 2,
+      HTTP_METHOD_DOESNT_MATCH_HANDLER_METHOD = 3,
+      NO_VALID_HANDLER_FOR_REQUEST = 4,
+      OK = 0
+    };
+
+  private:
+    ServerError send_local_file(int new_socket, HTTP::HttpRequest http_req)
     {
       std::string response_msg_body{};
 
@@ -60,7 +70,6 @@ private:
       bool should_file_be_parsed_with_php = file_ext == ".php" || file_ext == ".html";
       if (should_file_be_parsed_with_php)
       {
-
         response_msg_body = parse_file_with_php(local_file_path);
       }
       else
@@ -70,7 +79,7 @@ private:
         {
           HTTP::HttpResponse response{404, "ERROR", "text/plain", "Put Error Page Here"};
           socket_send_http_response(new_socket, response);
-          return -1;
+          return ServerError::CANNOT_OPEN_REQ_FILE;
         }
       }
 
@@ -79,42 +88,49 @@ private:
       {
         HTTP::HttpResponse response{404, "ERROR", "text/plain", "Put Mime Type Error Page Here"};
         socket_send_http_response(new_socket, response);
-        return -1;
+        return ServerError::CANNOT_FIND_MIME_TYPE;
       }
 
       HTTP::HttpResponse response{200, "OK", mime_type, response_msg_body};
       socket_send_http_response(new_socket, response);
 
-      return 0;
+      return ServerError::OK;
     }
 
-    int loop()
+    ServerError loop()
     {
-      int ret = 0;
+      ServerError ret = ServerError::OK;
 
       sockaddr their_addr;
       int new_socket = Net::accept(sockfd, &their_addr);
 
       std::string received_msg_str = socket_recv_string(new_socket);
+      if (received_msg_str.empty())
+      {
+        Net::close(new_socket);
+        return ret;
+      }
       HTTP::HttpRequest http_req = HTTP::parse_http_req_str(received_msg_str);
       URI::URI http_req_uri = URI::parse_uri_from_string(http_req.uri);
 
-      if (http_req_handler_map.contains(http_req_uri.path))
+      std::cout << "accepted request: " << http_req_uri.path << "\n";
+
+      if (http_req_handler_map.contains({http_req_uri.path, http_req.method}))
       {
-        auto handler = http_req_handler_map[http_req_uri.path];
-        if (handler.http_method != http_req.method)
-        {
-          HTTP::HttpResponse response{404 , "ERROR", "text/plain", "HTTP Method Doesn't match handler method type error"};
-          socket_send_http_response(new_socket, response);
-          ret = -1;
-        }
-        HTTP::HttpResponse response = handler.func(http_req);
+        auto handler = http_req_handler_map[{http_req_uri.path, http_req.method}];
+        HTTP::HttpResponse response = handler(http_req);
         socket_send_http_response(new_socket, response);
       }
 
-      else
+      else if (http_req.method == "GET")
       {
         ret = send_local_file(new_socket, http_req);
+      }
+      else
+      {
+        HTTP::HttpResponse response{404, "ERROR", "text/plain", "Couldn't find valid handler for request"};
+        socket_send_http_response(new_socket, response);
+        ret = ServerError::NO_VALID_HANDLER_FOR_REQUEST;
       }
       Net::close(new_socket);
       return ret;

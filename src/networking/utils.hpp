@@ -5,6 +5,21 @@
 #include "net.hpp"
 #include "http.hpp"
 
+
+
+int read_str_from_file(const std::string &filepath, std::string &contents)
+{
+  std::ifstream t(filepath);
+  if (t.fail())
+  {
+    return -1;
+  }
+  std::stringstream buffer;
+  buffer << t.rdbuf();
+  contents = buffer.str();
+  return 0;
+}
+
 std::string get_extension_of_file(const std::string file)
 {
   return std::filesystem::path(file).extension().string();
@@ -30,18 +45,12 @@ std::string get_filepath_from_uri(const std::string &uri_path)
   }
 }
 
-#define RECEIVED_MSG_SIZE 10000
+#define RECEIVED_MSG_SIZE 100000
 std::string socket_recv_string(int sockfd)
 {
   char received_msg[RECEIVED_MSG_SIZE + 1];
   int bytes_read = Net::recv(sockfd, received_msg, RECEIVED_MSG_SIZE);
-  if (bytes_read == 0)
-  {
-    printf("ERROR: recv_string() bytes read is 0");
-    exit(-1);
-  }
-  received_msg[bytes_read] = '\0';
-  return std::string(received_msg);
+  return std::string(received_msg, bytes_read);
 }
 
 int socket_send_http_response(int sockfd, const HTTP::HttpResponse &response)
