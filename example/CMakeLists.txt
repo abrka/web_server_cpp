@@ -12,7 +12,7 @@ target_link_options(web_server_example PRIVATE -fsanitize=address,leak,undefined
 
 
 add_custom_target(copy_assets
-    COMMAND ${CMAKE_COMMAND} -E copy_directory ${CMAKE_CURRENT_SOURCE_DIR}/assets ${CMAKE_CURRENT_BINARY_DIR}
+    COMMAND ${CMAKE_COMMAND} -E copy_directory ${CMAKE_CURRENT_SOURCE_DIR}/assets ${CMAKE_CURRENT_BINARY_DIR}/assets
 )
 add_dependencies(web_server_example copy_assets)
 
