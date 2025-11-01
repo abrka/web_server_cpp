@@ -4,6 +4,7 @@
 #include <map>
 #include <functional>
 #include <utility>
+#include <filesystem>
 
 #include "net.hpp"
 #include "http.hpp"
@@ -20,6 +21,7 @@ namespace ServerHTTP
 
   struct Server
   {
+    std::filesystem::path mount_point{};
   private:
     int sockfd = -1;
     std::map<http_req_handler_key, http_req_handler_func_t> http_req_handler_map{};
@@ -29,7 +31,7 @@ namespace ServerHTTP
     {
       sockfd = Net::socket();
       Net::remove_addr_already_in_use(sockfd);
-      Net::bind(sockfd, "0.0.0.0", port);
+      Net::bind(sockfd, port);
       Net::listen(sockfd, backlog);
     }
 
@@ -66,7 +68,8 @@ namespace ServerHTTP
       std::string response_msg_body{};
 
       URI::URI http_req_uri = URI::parse_uri_from_string(http_req.uri);
-      std::string local_file_path = get_filepath_from_uri(http_req_uri.path);
+      std::filesystem::path rel_file_path = get_filepath_from_uri(http_req_uri.path);
+      std::string local_file_path = mount_point / rel_file_path;
 
       std::string file_ext = get_extension_of_file(local_file_path);
       bool should_file_be_parsed_with_php = file_ext == ".php" || file_ext == ".html";
@@ -81,6 +84,7 @@ namespace ServerHTTP
         {
           HTTP::HttpResponse response{404, "ERROR", "text/plain", "Put Error Page Here"};
           socket_send_http_response(new_socket, response);
+          assert(false);
           return ServerError::CANNOT_OPEN_REQ_FILE;
         }
       }

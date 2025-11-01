@@ -35,13 +35,14 @@ namespace Net
       exit(-1);
     }
   }
-  addrinfo *get_addr(const char *ip, const char *port)
+
+  addrinfo *get_addr(const char *ip, const char *port, int ai_flags = 0)
   {
     addrinfo hints{};
     memset(&hints, 0, sizeof(hints));
     hints.ai_family = AF_INET;
     hints.ai_socktype = SOCK_STREAM;
-    // hints.ai_flags = AI_PASSIVE;
+
     addrinfo *my_addrinfo;
     int ret = getaddrinfo(ip, port, &hints, &my_addrinfo);
     if (ret != 0)
@@ -59,9 +60,11 @@ namespace Net
     printf("ERROR: no addrinfo found \n");
     exit(-1);
   }
-  void bind(int sockfd, const char *ip, const char *port)
+
+  // for clients
+  void bind(int sockfd, const char *ip, const char *port, int ai_flags = 0)
   {
-    addrinfo *my_addrinfo = get_addr(ip, port);
+    addrinfo *my_addrinfo = get_addr(ip, port, ai_flags);
     int ret = ::bind(sockfd, my_addrinfo->ai_addr, my_addrinfo->ai_addrlen);
     if (ret != 0)
     {
@@ -70,6 +73,13 @@ namespace Net
     }
     freeaddrinfo(my_addrinfo);
   }
+
+  // for servers
+  void bind(int sockfd, const char *port)
+  {
+    return bind(sockfd, NULL, port, AI_PASSIVE);
+  }
+
   void connect(int sockfd, const char *ip, const char *port)
   {
     addrinfo *my_addrinfo = get_addr(ip, port);
@@ -125,7 +135,8 @@ namespace Net
     }
     return bytes_recv;
   }
-  void close(int sockfd){
+  void close(int sockfd)
+  {
     ::close(sockfd);
   }
 }
