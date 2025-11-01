@@ -29,7 +29,7 @@ namespace ServerHTTP
     {
       sockfd = Net::socket();
       Net::remove_addr_already_in_use(sockfd);
-      Net::bind(sockfd, NULL, port);
+      Net::bind(sockfd, "0.0.0.0", port);
       Net::listen(sockfd, backlog);
     }
 
