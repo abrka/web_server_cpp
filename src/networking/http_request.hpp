@@ -118,21 +118,55 @@ namespace HTTP
   }
   bool parse_http_multi_part_body(HttpParserStringStream &stream, HttpRequest &http_req)
   {
-    std::string& body = http_req.multi_part_data.back().body;
+    std::string &body = http_req.multi_part_data.back().body;
     body = stream.get();
+
+    // remove /r/n from end of body
     body.pop_back();
     body.pop_back();
     return true;
   }
-  HttpRequest parse_http_req_str(const std::string &http_req_str)
+
+  bool verify_http_content_length(const HttpRequest &req)
+  {
+    if (req.headers.find("Content-Length") == req.headers.end())
+    {
+      return (req.body.size() == 0);
+    }
+    return std::stoi(req.headers.at("Content-Length")) == req.body.size();
+  }
+
+  enum class HttpRequestParserError
+  {
+    OK = 0,
+    CONTENT_LENGTH_MISMATCH_ERROR,
+    REQ_LINE_ERROR,
+    HEADERS_ERROR,
+    BODY_ERROR,
+    MULTI_PART_HEADER_ERROR,
+    MULTI_PART_BODY_ERROR
+  };
+
+  HttpRequestParserError parse_http_req_str(const std::string &http_req_str, HttpRequest &output_req)
   {
     HttpParserStringStream stream{0, http_req_str};
-    HttpRequest output_req{};
-    bool success = true;
 
+    bool success = true;
     success = parse_http_req_line(stream, output_req);
-    success = success && parse_http_headers(stream, output_req);
-    success = success && parse_http_body(stream, output_req);
+    if (!success)
+      return HttpRequestParserError::REQ_LINE_ERROR;
+
+    success = parse_http_headers(stream, output_req);
+    if (!success)
+      return HttpRequestParserError::HEADERS_ERROR;
+
+    success = parse_http_body(stream, output_req);
+    if (!success)
+      return HttpRequestParserError::BODY_ERROR;
+
+    success = verify_http_content_length(output_req);
+    if (!success)
+      return HttpRequestParserError::CONTENT_LENGTH_MISMATCH_ERROR;
 
     std::string multi_part_form_data = "multipart/form-data";
     std::string content_type_header_val = output_req.headers["Content-Type"];
@@ -156,13 +190,16 @@ namespace HTTP
         }
         output_req.multi_part_data.push_back({});
         HttpParserStringStream multi_part_stream{0, multi_part_data};
-        success = success && parse_http_multi_part_headers(multi_part_stream, output_req);
+        success = parse_http_multi_part_headers(multi_part_stream, output_req);
+        if (!success)
+          return HttpRequestParserError::MULTI_PART_HEADER_ERROR;
         success = success && parse_http_multi_part_body(multi_part_stream, output_req);
+        if (!success)
+          return HttpRequestParserError::MULTI_PART_BODY_ERROR;
       }
     }
 
-    assert(success);
-    return output_req;
+    return HttpRequestParserError::OK;
   }
 
 }
