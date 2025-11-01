@@ -15,3 +15,6 @@ add_custom_target(copy_assets
     COMMAND ${CMAKE_COMMAND} -E copy_directory ${CMAKE_CURRENT_SOURCE_DIR}/assets ${CMAKE_CURRENT_BINARY_DIR}
 )
 add_dependencies(web_server_example copy_assets)
+
+# Install the executable
+install(TARGETS web_server_example RUNTIME DESTINATION bin)

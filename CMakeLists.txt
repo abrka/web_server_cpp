@@ -15,7 +15,10 @@ add_subdirectory(example)
 
 
 set(gtest_force_shared_crt ON CACHE BOOL "" FORCE)
+set(INSTALL_GTEST OFF)
 add_subdirectory(external/googletest)
 
 enable_testing()
 add_subdirectory(tests/http)
+
+include(CPack)
