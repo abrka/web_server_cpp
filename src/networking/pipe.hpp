@@ -7,7 +7,7 @@
 #define PIPE_STR_SIZE 24
 
 /**
- * @warning CAUSES MEMORY LEAK
+ * @warning the returned char* buffer must be free() d
  */
 char* read_pipe_output(const char *command)
 {
