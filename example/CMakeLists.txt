@@ -7,7 +7,7 @@ target_link_libraries(web_server_example PUBLIC networking_lib)
 
 
 set_target_properties(web_server_example PROPERTIES CXX_STANDARD 20)
-target_compile_options(web_server_example PRIVATE -pedantic -Wall -Wextra -Wconversion -fsanitize=address,leak,undefined)
+target_compile_options(web_server_example PRIVATE -pedantic -Wall -Wextra -Wconversion -fstack-protector-all -fsanitize=address,leak,undefined)
 target_link_options(web_server_example PRIVATE -fsanitize=address,leak,undefined)
 
 
