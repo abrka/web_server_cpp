@@ -61,7 +61,6 @@ namespace Net
     exit(-1);
   }
 
-  // for clients
   void bind(int sockfd, const char *ip, const char *port, int ai_flags = 0)
   {
     addrinfo *my_addrinfo = get_addr(ip, port, ai_flags);
@@ -72,12 +71,6 @@ namespace Net
       exit(-1);
     }
     freeaddrinfo(my_addrinfo);
-  }
-
-  // for servers
-  void bind(int sockfd, const char *port)
-  {
-    return bind(sockfd, NULL, port, AI_PASSIVE);
   }
 
   void connect(int sockfd, const char *ip, const char *port)
@@ -111,9 +104,9 @@ namespace Net
     }
     return new_socket;
   }
-  int send(int sockfd, void *data, size_t data_size)
+  size_t send(int sockfd, void *data, size_t data_size)
   {
-    int bytes_sent = ::send(sockfd, data, data_size, 0);
+    size_t bytes_sent = ::send(sockfd, data, data_size, 0);
     if (bytes_sent == -1)
     {
       perror("ERROR: cant send");
@@ -121,9 +114,9 @@ namespace Net
     }
     return bytes_sent;
   }
-  int recv(int sockfd, void *buffer, size_t buffer_size)
+  size_t recv(int sockfd, void *buffer, size_t buffer_size)
   {
-    int bytes_recv = ::recv(sockfd, buffer, buffer_size, 0);
+    size_t bytes_recv = ::recv(sockfd, buffer, buffer_size, 0);
     if (bytes_recv == -1)
     {
       perror("ERROR: cant recv");
