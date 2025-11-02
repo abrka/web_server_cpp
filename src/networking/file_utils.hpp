@@ -1,10 +1,9 @@
 #pragma once
 
-#include <filesystem>
+#include <string>
 #include <fstream>
-#include "net.hpp"
-#include "http.hpp"
-
+#include <sstream>
+#include <filesystem>
 
 
 int read_str_from_file(const std::string &filepath, std::string &contents)
@@ -42,27 +41,5 @@ std::string get_filepath_from_uri(const std::string &uri_path)
   else
   {
     return get_local_path_from_uri_path(uri_path);
-  }
-}
-
-#define RECEIVED_MSG_SIZE 100000
-std::string socket_recv_string(int sockfd)
-{
-  char received_msg[RECEIVED_MSG_SIZE + 1];
-  int bytes_read = Net::recv(sockfd, received_msg, RECEIVED_MSG_SIZE);
-  return std::string(received_msg, bytes_read);
-}
-
-int socket_send_http_response(int sockfd, const HTTP::HttpResponse &response)
-{
-  std::string http_response_str = HTTP::http_response_to_str(response);
-  int bytes_sent = Net::send(sockfd, (void *)http_response_str.c_str(), http_response_str.length());
-  if (bytes_sent == (int)http_response_str.length())
-  {
-    return 0;
-  }
-  else
-  {
-    return -1;
   }
 }
