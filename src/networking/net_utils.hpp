@@ -19,7 +19,6 @@ enum class SocketRecvHttpStringError
 {
   OK = 0,
   NEG_CONTENT_LENGTH,
-  BYTES_READ_IS_ZERO,
   REQUEST_SIZE_PASSES_LIMIT, // request is too big
   MAX_ITERATIONS_PASSED,     // request couldnt be parsed within max limit of iterations
 };
@@ -34,7 +33,7 @@ SocketRecvHttpStringError socket_recv_http_string(int sockfd, std::string &outpu
     auto bytes_read = Net::recv(sockfd, tmp_str.data(), tmp_str.size());
     if (bytes_read == 0)
     {
-      return SocketRecvHttpStringError::BYTES_READ_IS_ZERO;
+      return SocketRecvHttpStringError::OK;
     }
 
     recv_msg += tmp_str.substr(0, (size_t)bytes_read);
