@@ -6,7 +6,7 @@ namespace HTTP
 {
   struct HttpParserStringStream
   {
-    int pos{};
+    size_t pos{};
     std::string str{};
 
     std::string get()
@@ -22,12 +22,12 @@ namespace HTTP
     // returns the matched string
     std::string seek_until(const std::string &delim)
     {
-      int first_occurrence_pos = str.find(delim, pos);
+      size_t first_occurrence_pos = str.find(delim, pos);
       if (first_occurrence_pos == std::string::npos)
       {
         return "";
       }
-      int new_pos = first_occurrence_pos + delim.size();
+      size_t new_pos = first_occurrence_pos + delim.size();
       size_t num_chars = first_occurrence_pos - pos;
       std::string match = str.substr(pos, num_chars);
       pos = new_pos;
