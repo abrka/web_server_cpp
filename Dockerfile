@@ -1,8 +1,6 @@
 # Use a base image with a recent version of Ubuntu or Debian
 FROM gcc:latest
 
-EXPOSE 3490
-
 RUN apt-get update && apt-get install -y cmake 
 
 RUN apt-get install -y php
