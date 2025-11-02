@@ -133,7 +133,7 @@ namespace HTTP
     {
       return (req.body.size() == 0);
     }
-    return std::stoi(req.headers.at("Content-Length")) == req.body.size();
+    return std::stoi(req.headers.at("Content-Length")) == (int)req.body.size();
   }
 
   enum class HttpRequestParserError
@@ -174,14 +174,14 @@ namespace HTTP
     if (is_req_multi_part)
     {
       std::string output_req_body_copy = output_req.body;
-      std::string boundary_str = str_split(content_type_header_val, "=")[1];
+      std::string boundary_str = str_split_unsafe(content_type_header_val, "=")[1];
       // remove the last boundary string(special case)
       std::string remove_at = "--" + boundary_str + "--\r\n";
       str_remove_substr(output_req_body_copy, remove_at);
 
       // split into multi part datas
       std::string split_at = "--" + boundary_str + "\r\n";
-      std::vector<std::string> multi_part_datas = str_split(output_req_body_copy, split_at);
+      std::vector<std::string> multi_part_datas = str_split_unsafe(output_req_body_copy, split_at);
       for (const auto &multi_part_data : multi_part_datas)
       {
         if (multi_part_data.empty())

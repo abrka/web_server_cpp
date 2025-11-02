@@ -40,6 +40,7 @@ namespace Net
   {
     addrinfo hints{};
     memset(&hints, 0, sizeof(hints));
+    hints.ai_flags = ai_flags;
     hints.ai_family = AF_INET;
     hints.ai_socktype = SOCK_STREAM;
 
@@ -104,9 +105,9 @@ namespace Net
     }
     return new_socket;
   }
-  size_t send(int sockfd, void *data, size_t data_size)
+  auto send(int sockfd, void *data, size_t data_size)
   {
-    size_t bytes_sent = ::send(sockfd, data, data_size, 0);
+    auto bytes_sent = ::send(sockfd, data, data_size, 0);
     if (bytes_sent == -1)
     {
       perror("ERROR: cant send");
@@ -114,9 +115,9 @@ namespace Net
     }
     return bytes_sent;
   }
-  size_t recv(int sockfd, void *buffer, size_t buffer_size)
+  auto recv(int sockfd, void *buffer, size_t buffer_size)
   {
-    size_t bytes_recv = ::recv(sockfd, buffer, buffer_size, 0);
+    auto bytes_recv = ::recv(sockfd, buffer, buffer_size, 0);
     if (bytes_recv == -1)
     {
       perror("ERROR: cant recv");

@@ -9,11 +9,25 @@
 #include "net.hpp"
 #include "http.hpp"
 #include "uri.hpp"
-#include "utils.hpp"
+#include "file_utils.hpp"
+#include "net_utils.hpp"
+#include "string_utils.hpp"
 #include "php.hpp"
 
 namespace ServerHTTP
 {
+
+  enum class ServerError
+  {
+    OK = 0,
+    HTTP_REQ_PARSE_ERROR,
+    SOCKET_RECV_ERROR,
+    SOCKET_SEND_ERROR,
+    CANNOT_OPEN_REQ_FILE,
+    CANNOT_FIND_MIME_TYPE,
+    HTTP_METHOD_DOESNT_MATCH_HANDLER_METHOD,
+    NO_VALID_HANDLER_FOR_REQUEST,
+  };
 
   using http_req_handler_func_t = std::function<HTTP::HttpResponse(const HTTP::HttpRequest &)>;
 
@@ -22,16 +36,17 @@ namespace ServerHTTP
   struct Server
   {
     std::filesystem::path mount_point{};
+
   private:
     int sockfd = -1;
     std::map<http_req_handler_key, http_req_handler_func_t> http_req_handler_map{};
 
   public:
-    void init(const char *port, int backlog)
+    void init(const char *ip, const char *port, int backlog, int ai_flags = 0)
     {
       sockfd = Net::socket();
       Net::remove_addr_already_in_use(sockfd);
-      Net::bind(sockfd, port);
+      Net::bind(sockfd, ip, port, ai_flags);
       Net::listen(sockfd, backlog);
     }
 
@@ -50,17 +65,6 @@ namespace ServerHTTP
     {
       http_req_handler_map[{uri_path, http_method}] = handler_func;
     }
-
-    enum class ServerError
-    {
-      OK = 0,
-      HTTP_REQ_PARSE_ERROR,
-      SOCKET_SEND_ERROR,
-      CANNOT_OPEN_REQ_FILE,
-      CANNOT_FIND_MIME_TYPE,
-      HTTP_METHOD_DOESNT_MATCH_HANDLER_METHOD,
-      NO_VALID_HANDLER_FOR_REQUEST,
-    };
 
   private:
     ServerError send_local_file(int new_socket, HTTP::HttpRequest http_req)
@@ -84,7 +88,6 @@ namespace ServerHTTP
         {
           HTTP::HttpResponse response{404, "ERROR", "text/plain", "Put Error Page Here"};
           socket_send_http_response(new_socket, response);
-          assert(false);
           return ServerError::CANNOT_OPEN_REQ_FILE;
         }
       }
@@ -109,7 +112,15 @@ namespace ServerHTTP
       sockaddr their_addr;
       int new_socket = Net::accept(sockfd, &their_addr);
 
-      std::string received_msg_str = socket_recv_string(new_socket);
+      std::string received_msg_str{};
+      auto err_1 = socket_recv_http_string(new_socket, received_msg_str);
+
+      if (err_1 != SocketRecvHttpStringError::OK)
+      {
+        // there is no point sending a response since the socket's read buffer is not cleared fully. the client will not receive a valid message
+        Net::close(new_socket);
+        return ServerError::SOCKET_RECV_ERROR;
+      }
 
       // handle 0 bytes in recv
       if (received_msg_str.empty())
@@ -119,8 +130,8 @@ namespace ServerHTTP
       }
 
       HTTP::HttpRequest http_req{};
-      auto err = HTTP::parse_http_req_str(received_msg_str, http_req);
-      if (err != HTTP::HttpRequestParserError::OK)
+      auto err_2 = HTTP::parse_http_req_str(received_msg_str, http_req);
+      if (err_2 != HTTP::HttpRequestParserError::OK)
       {
         HTTP::HttpResponse response{404, "ERROR", "text/plain", "Error Parsing HTTP Request"};
         socket_send_http_response(new_socket, response);
@@ -142,9 +153,9 @@ namespace ServerHTTP
 
       else if (http_req.method == "GET")
       {
-        auto ret = send_local_file(new_socket, http_req);
+        auto err_3 = send_local_file(new_socket, http_req);
         Net::close(new_socket);
-        return ret;
+        return err_3;
       }
       else
       {
@@ -153,7 +164,7 @@ namespace ServerHTTP
         Net::close(new_socket);
         return ServerError::NO_VALID_HANDLER_FOR_REQUEST;
       }
-      assert(false && "shouldnt reach here");
+      assert(false && "SERVER shouldnt reach here");
     }
   };
 }

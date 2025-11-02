@@ -17,7 +17,7 @@ namespace URI
   {
     URI uri{};
 
-    std::vector<std::string> path_and_query = str_split(str, "?");
+    std::vector<std::string> path_and_query = str_split_unsafe(str, "?");
 
     assert(path_and_query.size() > 0 && path_and_query.size() <= 2);
 
@@ -26,10 +26,10 @@ namespace URI
     if (path_and_query.size() == 2)
     {
       std::string query_str = path_and_query[1];
-      std::vector<std::string> queries = str_split(query_str, "&");
+      std::vector<std::string> queries = str_split_unsafe(query_str, "&");
       for (const std::string &query : queries)
       {
-        std::vector<std::string> key_val = str_split(query, "=");
+        std::vector<std::string> key_val = str_split_unsafe(query, "=");
         assert(key_val.size() == 2);
         std::string key = key_val[0];
         std::string val = key_val[1];
