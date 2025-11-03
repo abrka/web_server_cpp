@@ -1,16 +1,13 @@
 #pragma once
 
-#include <string>
+#include <filesystem>
 #include <fstream>
 #include <sstream>
-#include <filesystem>
+#include <string>
 
-
-int read_str_from_file(const std::string &filepath, std::string &contents)
-{
+int read_str_from_file(const std::string &filepath, std::string &contents) {
   std::ifstream t(filepath);
-  if (t.fail())
-  {
+  if (t.fail()) {
     return -1;
   }
   std::stringstream buffer;
@@ -19,27 +16,21 @@ int read_str_from_file(const std::string &filepath, std::string &contents)
   return 0;
 }
 
-std::string get_extension_of_file(const std::string file)
-{
+std::string get_extension_of_file(const std::string file) {
   return std::filesystem::path(file).extension().string();
 }
 
-std::string get_local_path_from_uri_path(const std::string &uri)
-{
+std::string get_local_path_from_uri_path(const std::string &uri) {
 
   std::string path = uri;
   path.erase(0, 1);
   return path;
 }
 
-std::string get_filepath_from_uri(const std::string &uri_path)
-{
-  if (uri_path == "/")
-  {
+std::string get_filepath_from_uri(const std::string &uri_path) {
+  if (uri_path == "/") {
     return "index.html";
-  }
-  else
-  {
+  } else {
     return get_local_path_from_uri_path(uri_path);
   }
 }

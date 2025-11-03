@@ -9,11 +9,9 @@
 /**
  * @warning the returned char* buffer must be free() d
  */
-char* read_pipe_output(const char *command)
-{
+char *read_pipe_output(const char *command) {
   FILE *pipe = popen(command, "r");
-  if (!pipe)
-  {
+  if (!pipe) {
     perror("popen failed");
     return NULL;
   }
@@ -22,12 +20,11 @@ char* read_pipe_output(const char *command)
   char *output = NULL;
   size_t total_size = 0;
 
-  while (fgets(buffer, sizeof(buffer), pipe) != NULL)
-  {
+  while (fgets(buffer, sizeof(buffer), pipe) != NULL) {
     size_t chunk_len = strlen(buffer);
-    output = (char *)realloc(output, total_size + chunk_len + 1); // +1 for null terminator
-    if (!output)
-    {
+    output = (char *)realloc(output, total_size + chunk_len +
+                                         1); // +1 for null terminator
+    if (!output) {
       perror("ERROR: read_pipe_output() realloc failed");
       pclose(pipe);
       return NULL;
@@ -36,12 +33,9 @@ char* read_pipe_output(const char *command)
     total_size += chunk_len;
   }
 
-  if (output)
-  {
+  if (output) {
     output[total_size] = '\0'; // Null-terminate the string
-  }
-  else
-  {
+  } else {
     printf("ERROR: read_pipe_output() result string is null");
     return NULL;
   }
