@@ -14,7 +14,7 @@ HTTP::HttpResponse upload_api_handler(const HTTP::HttpRequest &req)
   file << data;
 
   count++;
-  return HTTP::HttpResponse{200, "OK", "text/plain", "you called file upload api"};
+  return HTTP::HttpResponse{200, "OK", {{"Content-Type", "text/plain"}}, "you called file upload api"};
 }
 
 int main(int argc, char *argv[])
@@ -57,9 +57,15 @@ int main(int argc, char *argv[])
   ServerHTTP::Server server{};
   server.mount_point = mount_point;
 
-  server.register_http_req_handler("/api_call", "GET", [](const HTTP::HttpRequest&)
-                                   { return HTTP::HttpResponse{200, "OK", "text/plain", "blah blah from c++ backend"}; });
-  server.register_http_req_handler("/upload_api", "POST", upload_api_handler);
+  server.register_http_req_handler(std::regex("/upload_api"), "POST", upload_api_handler);
+
+  server.register_http_req_handler(std::regex("/api_call"), "GET", [](const HTTP::HttpRequest &)
+                                   { return HTTP::HttpResponse{200, "OK", {{"Content-Type", "text/plain"}}, "blah blah from c++ backend"}; });
+
+  server.register_http_req_handler(std::regex(R"(/api_regex_test/(\w*))"), "GET", [](const HTTP::HttpRequest &req)
+                                   { 
+                                    std::string match = req.custom_params[1];
+                                    return HTTP::HttpResponse{200, "OK", {{"Content-Type", "text/plain"}}, "you called api regex test with " + match}; });
 
   server.init(ip.c_str(), port.c_str(), 10);
   server.listen();

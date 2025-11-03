@@ -27,6 +27,13 @@ namespace HTTP
     std::string body{};
     std::string version{};
     std::vector<HttpMultiPartDataPacket> multi_part_data{};
+    /**
+     * @brief the custom params passed when the router matches uri with regex capture groups.
+     *        Note that the first element is the entire string.
+     *        the 1st capture group is in custom_params[1].
+     *        the n th capture group is in custom_params[n].
+     **/
+    std::vector<std::string> custom_params{};
   };
 
   bool parse_http_method(HttpParserStringStream &stream, HttpRequest &http_req)
