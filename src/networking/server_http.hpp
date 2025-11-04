@@ -41,6 +41,7 @@ using http_req_handler_func_t =
 
 struct Server {
   std::filesystem::path mount_point{};
+  std::filesystem::path index_file{"index.html"};
 
 private:
   int sockfd = -1;
@@ -83,12 +84,14 @@ private:
 
     URI::URI http_req_uri = URI::parse_uri_from_string(http_req.uri);
     std::filesystem::path rel_file_path =
-        get_filepath_from_uri(http_req_uri.path);
-    std::string local_file_path = mount_point / rel_file_path;
+        (http_req_uri.path == "/")
+            ? index_file
+            : get_filepath_from_uri_path(http_req_uri.path);
 
+    std::string local_file_path = mount_point / rel_file_path;
+    
     std::string file_ext = get_extension_of_file(local_file_path);
-    bool should_file_be_parsed_with_php =
-        file_ext == ".php" || file_ext == ".html";
+    bool should_file_be_parsed_with_php = file_ext == ".php";
     if (should_file_be_parsed_with_php) {
       response_msg_body = parse_file_with_php(local_file_path);
     } else {
@@ -111,7 +114,7 @@ private:
                                   {{"Content-Type", "text/plain"}},
                                   "Put Mime Type Error Page Here"};
       http_res = response;
-      return false; 
+      return false;
     }
     HTTP::HttpResponse response{
         200, "OK", {{"Content-Type", mime_type}}, response_msg_body};

@@ -20,17 +20,8 @@ std::string get_extension_of_file(const std::string file) {
   return std::filesystem::path(file).extension().string();
 }
 
-std::string get_local_path_from_uri_path(const std::string &uri) {
-
-  std::string path = uri;
+std::filesystem::path get_filepath_from_uri_path(const std::string &uri_path) {
+  std::string path = uri_path;
   path.erase(0, 1);
-  return path;
-}
-
-std::string get_filepath_from_uri(const std::string &uri_path) {
-  if (uri_path == "/") {
-    return "index.html";
-  } else {
-    return get_local_path_from_uri_path(uri_path);
-  }
+  return std::filesystem::path(path);
 }
