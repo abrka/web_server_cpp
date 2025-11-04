@@ -3,7 +3,7 @@ project(web_server_example_proj)
 
 add_executable(web_server_example "main.cpp")
 
-target_link_libraries(web_server_example PUBLIC networking_lib)
+target_link_libraries(web_server_example PUBLIC networking_lib::networking_lib)
 
 
 set_target_properties(web_server_example PROPERTIES CXX_STANDARD 20)
@@ -15,6 +15,3 @@ add_custom_target(copy_assets
     COMMAND ${CMAKE_COMMAND} -E copy_directory ${CMAKE_CURRENT_SOURCE_DIR}/assets ${CMAKE_CURRENT_BINARY_DIR}/assets
 )
 add_dependencies(web_server_example copy_assets)
-
-# Install the executable
-install(TARGETS web_server_example RUNTIME DESTINATION bin)
