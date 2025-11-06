@@ -77,19 +77,11 @@ public:
         {uri_path_matcher, http_method, handler_func});
   }
 
-private:
-  bool load_local_file_into_http_response(const HTTP::HttpRequest &http_req,
+  bool load_local_file_into_http_response(const std::string &filepath,
                                           HTTP::HttpResponse &http_res) {
     std::string response_msg_body{};
+    std::string local_file_path = mount_point / filepath;
 
-    URI::URI http_req_uri = URI::parse_uri_from_string(http_req.uri);
-    std::filesystem::path rel_file_path =
-        (http_req_uri.path == "/")
-            ? index_file
-            : get_filepath_from_uri_path(http_req_uri.path);
-
-    std::string local_file_path = mount_point / rel_file_path;
-    
     std::string file_ext = get_extension_of_file(local_file_path);
     bool should_file_be_parsed_with_php = file_ext == ".php";
     if (should_file_be_parsed_with_php) {
@@ -122,7 +114,17 @@ private:
     http_res = response;
     return true;
   }
+  bool load_local_file_into_http_response(const HTTP::HttpRequest &http_req,
+                                          HTTP::HttpResponse &http_res) {
+    URI::URI http_req_uri = URI::parse_uri_from_string(http_req.uri);
+    std::filesystem::path rel_file_path =
+        (http_req_uri.path == "/")
+            ? index_file
+            : get_filepath_from_uri_path(http_req_uri.path);
+    return load_local_file_into_http_response(rel_file_path, http_res);
+  }
 
+private:
   /**
    * @warning updates http request with uri capture params
    */
