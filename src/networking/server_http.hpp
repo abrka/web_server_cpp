@@ -121,7 +121,8 @@ public:
         (http_req_uri.path == "/")
             ? index_file
             : get_filepath_from_uri_path(http_req_uri.path);
-    return load_local_file_into_http_response(rel_file_path, http_res);
+    
+    return load_local_file_into_http_response(rel_file_path.filename(), http_res);
   }
 
 private:
