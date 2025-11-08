@@ -1,3 +1,5 @@
+#pragma once
+
 #include <cassert>
 #include <map>
 #include <stddef.h>
