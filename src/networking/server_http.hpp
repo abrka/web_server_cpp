@@ -92,7 +92,8 @@ public:
       if (file_opened_successfully != 0) {
         HTTP::HttpResponse response{404,
                                     "ERROR",
-                                    {{"Content-Type", "text/plain"}},
+                                    {{"Content-Type", "text/plain"},
+                                     {"Access-Control-Allow-Origin", "*"}},
                                     "Put Error Page Here"};
         http_res = response;
         return false;
@@ -103,7 +104,8 @@ public:
     if (mime_type.empty()) {
       HTTP::HttpResponse response{404,
                                   "ERROR",
-                                  {{"Content-Type", "text/plain"}},
+                                  {{"Content-Type", "text/plain"},
+                                   {"Access-Control-Allow-Origin", "*"}},
                                   "Put Mime Type Error Page Here"};
       http_res = response;
       return false;
@@ -121,8 +123,9 @@ public:
         (http_req_uri.path == "/")
             ? index_file
             : get_filepath_from_uri_path(http_req_uri.path);
-    
-    return load_local_file_into_http_response(rel_file_path.filename(), http_res);
+
+    return load_local_file_into_http_response(rel_file_path.filename(),
+                                              http_res);
   }
 
 private:
@@ -177,14 +180,16 @@ private:
     if (err_2 != HTTP::HttpRequestParserError::OK) {
       HTTP::HttpResponse response{404,
                                   "ERROR",
-                                  {{"Content-Type", "text/plain"}},
+                                  {{"Content-Type", "text/plain"},
+                                   {"Access-Control-Allow-Origin", "*"}},
                                   "Error Parsing HTTP Request"};
       socket_send_http_response(new_socket, response);
       Net::close(new_socket);
       return ServerError::HTTP_REQ_PARSE_ERROR;
     }
 
-    std::cout << "SERVER: received message from uri: " << http_req.uri << "\n";
+    std::cout << "SERVER: received message from uri: " << http_req.uri
+              << " method: " << http_req.method << "\n";
 
     http_req_handler_func_t handler{};
     bool found_handler = find_http_req_handler_func(http_req, handler);
@@ -208,7 +213,8 @@ private:
     } else {
       HTTP::HttpResponse response{404,
                                   "ERROR",
-                                  {{"Content-Type", "text/plain"}},
+                                  {{"Content-Type", "text/plain"},
+                                   {"Access-Control-Allow-Origin", "*"}},
                                   "Couldn't find valid handler for request"};
       socket_send_http_response(new_socket, response);
       Net::close(new_socket);
