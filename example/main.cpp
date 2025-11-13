@@ -85,7 +85,7 @@ int main(int argc, char *argv[]) {
   }
 
   ServerHTTP::Server server{};
-  server.mount_point = mount_point;
+  server.serve_files(mount_point);
 
   server.register_http_req_handler(std::regex("/files"), "GET",
                                    get_files_api_handler);
