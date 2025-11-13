@@ -40,10 +40,12 @@ using http_req_handler_func_t =
     std::function<HTTP::HttpResponse(const HTTP::HttpRequest &)>;
 
 struct Server {
+
+private:
+  bool serve_files{false};
   std::filesystem::path mount_point{};
   std::filesystem::path index_file{"index.html"};
 
-private:
   int sockfd = -1;
   struct http_req_handler {
     std::regex uri_path_matcher{};
@@ -54,6 +56,13 @@ private:
   std::vector<http_req_handler> http_req_handler_map{};
 
 public:
+  void serve_files(std::filesystem::path _mount_point){
+    serve_files = true;
+    mount_point = _mount_point;
+  }
+  void set_index_file(std::filesystem::path _index_file){
+    index_file = _index_file;
+  }
   void init(const char *ip, const char *port, int backlog, int ai_flags = 0) {
     sockfd = Net::socket();
     Net::remove_addr_already_in_use(sockfd);
@@ -198,7 +207,7 @@ private:
       socket_send_http_response(new_socket, response);
       Net::close(new_socket);
       return ServerError::OK;
-    } else if (http_req.method == "GET") {
+    } else if (serve_files && http_req.method == "GET") {
       HTTP::HttpResponse response{};
       bool success = load_local_file_into_http_response(
           http_req, response); // no need to check for error and send a response
